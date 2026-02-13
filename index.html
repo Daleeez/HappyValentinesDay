@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Will you be my Valentine? (slow envelope reveal)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #ffd6e7, #ff9fc1 40%, #ff6f9f 100%);
+      position: relative;
+    }
+
+    /* Sparkles */
+    .sparkle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: white;
+      border-radius: 50%;
+      opacity: .6;
+      animation: sparkleFloat linear infinite;
+    }
+    @keyframes sparkleFloat {
+      from { transform: translateY(100vh); opacity: 0; }
+      50% { opacity: 1; }
+      to { transform: translateY(-10vh); opacity: 0; }
+    }
+
+    /* Main card */
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(14px);
+      padding: 70px 80px;
+      border-radius: 35px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      z-index: 10;
+      position: relative;
+    }
+
+    .card h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      color: #d6336c;
+      margin-bottom: 50px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+    }
+
+    button {
+      position: relative;
+      padding: 16px 42px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      transition: all .35s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .yes-btn {
+      background: linear-gradient(135deg,#ff4d88,#ff85a2,#ffb3c6);
+      background-size: 200% 200%;
+      color: white;
+      box-shadow: 0 10px 25px rgba(255,77,136,.4), 0 0 20px rgba(255,105,180,.3);
+      animation: gradientShift 6s ease infinite;
+    }
+
+    .yes-btn:hover {
+      transform: translateY(-6px) scale(1.08);
+    }
+
+    .no-btn {
+      position: fixed;
+      padding: 14px 36px;
+      background: rgba(255,255,255,.35);
+      color: #555;
+      border: 1px solid rgba(255,255,255,.6);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.1);
+      transition: all .25s ease;
+      z-index: 20;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Tulip */
+    .tulip {
+      position: absolute;
+      bottom: -150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: rise linear forwards;
+    }
+    .stem {
+      width: 6px;
+      height: 90px;
+      background: linear-gradient(#2e8b57,#1f5f3f);
+      border-radius: 4px;
+    }
+    .leaf {
+      position: absolute;
+      width: 40px;
+      height: 20px;
+      background: linear-gradient(#3cb371,#2e8b57);
+      border-radius: 50%;
+      top: 40px;
+    }
+    .leaf.left { left: -30px; transform: rotate(-40deg); }
+    .leaf.right { right: -30px; transform: rotate(40deg); }
+    .flower {
+      position: relative;
+      width: 50px;
+      height: 60px;
+    }
+    .petal {
+      position: absolute;
+      width: 30px;
+      height: 45px;
+      background: linear-gradient(#ff4d88,#ff85a2);
+      border-radius: 50% 50% 40% 40%;
+    }
+    .petal.left { left: 0; transform: rotate(-25deg); }
+    .petal.center { left: 10px; z-index: 2; }
+    .petal.right { right: 0; transform: rotate(25deg); }
+
+    @keyframes rise {
+      0% { transform: translateY(0) scale(var(--scale)) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translateY(-120vh) scale(var(--scale)) rotate(8deg); opacity: 0; }
+    }
+
+    /* Overlay (thank you message) */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, rgba(255,192,203,.6), rgba(255,105,180,.5));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s ease;
+    }
+    .overlay.show {
+      opacity: 1;
+    }
+    .overlay h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      color: white;
+    }
+
+    /* ---------- ENVELOPE POP-UP (SLOW OPEN, SLOW TEXT REVEAL) ---------- */
+    .envelope-popup {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 300;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .envelope-popup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* envelope container */
+    .envelope-wrapper {
+      position: relative;
+      width: 400px;
+      height: 300px;
+      cursor: default;
+      filter: drop-shadow(0 25px 30px rgba(0,0,0,0.25));
+      transform-origin: center;
+    }
+
+    /* envelope base (back) */
+    .envelope-base {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #fad4d0;  /* soft pink base */
+      border-radius: 12px 12px 18px 18px;
+      box-shadow: inset 0 0 0 2px #f2b6ab, 0 10px 18px rgba(0,0,0,0.15);
+      z-index: 1;
+    }
+
+    /* flap - SLOWLY OPENS */
+    .envelope-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 42%;          /* height of flap */
+      background: #fcc9c0;  /* slightly lighter */
+      border-radius: 12px 12px 60% 60%;
+      transform-origin: top;
+      z-index: 4;
+      box-shadow: 0 -6px 10px rgba(0,0,0,0.05);
+      border-bottom: 3px solid #f5aea0;
+      
+      /* slow flap opening: 2 seconds, delayed 0.5s */
+      animation: slowFlapOpen 2.2s ease-in-out forwards;
+      animation-delay: 0.5s;
+    }
+
+    @keyframes slowFlapOpen {
+      0% { transform: rotateX(0deg); top: 0; }
+      40% { transform: rotateX(20deg); }    /* gentle lift */
+      100% { transform: rotateX(140deg); top: -30%; }  /* flaps open upward, out of view */
+    }
+
+    /* paper inside - SLOWLY RISES and text fades in gradually */
+    .envelope-paper {
+      position: absolute;
+      bottom: 6%;
+      left: 8%;
+      width: 84%;
+      height: 0;            /* will expand */
+      background: #fffef8;
+      border-radius: 16px 16px 8px 8px;
+      box-shadow: 0 14px 22px rgba(0,0,0,0.25);
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 0 18px;
+      overflow: hidden;
+      
+      /* Slow paper rise: 2.2s, starts after flap has begun moving */
+      animation: slowPaperRise 2.2s ease-out forwards;
+      animation-delay: 1.0s;   /* wait for flap to start lifting */
+    }
+
+    @keyframes slowPaperRise {
+      0% { height: 0%; opacity: 0; bottom: 2%; }
+      30% { height: 30%; opacity: 0.3; bottom: 4%; }
+      70% { height: 60%; opacity: 0.8; bottom: 6%; }
+      100% { height: 72%; opacity: 1; bottom: 8%; }
+    }
+
+    /* text inside paper — fades in very slowly after paper is mostly out */
+    .envelope-paper p {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem;
+      font-weight: 600;
+      color: #c1356b;
+      text-align: center;
+      line-height: 1.3;
+      margin: 8px 0 4px;
+      opacity: 0;
+      transform: translateY(12px);
+      
+      /* slow text reveal: 3 seconds, starts when paper is halfway */
+      animation: slowTextReveal 3s ease forwards;
+      animation-delay: 2.0s;
+    }
+
+    .envelope-paper .small-heart {
+      font-size: 2.4rem;
+      opacity: 0;
+      transform: scale(0.8);
+      animation: slowHeartReveal 2.4s ease forwards;
+      animation-delay: 2.8s;   /* appears after text */
+    }
+
+    @keyframes slowTextReveal {
+      0% { opacity: 0; transform: translateY(15px); }
+      30% { opacity: 0.3; transform: translateY(8px); }
+      80% { opacity: 0.9; transform: translateY(0); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slowHeartReveal {
+      0% { opacity: 0; transform: scale(0.6); }
+      40% { opacity: 0.4; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* decorative shine */
+    .envelope-shine {
+      position: absolute;
+      bottom: 10px;
+      left: 10%;
+      width: 80%;
+      height: 16px;
+      background: rgba(255,250,240,0.6);
+      filter: blur(8px);
+      border-radius: 50%;
+      z-index: 2;
+    }
+
+    /* close button appears only after animation */
+    .close-env {
+      position: absolute;
+      top: -18px;
+      right: -18px;
+      background: white;
+      border: none;
+      font-size: 26px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b34167;
+      font-weight: bold;
+      transition: background 0.2s;
+      opacity: 0;
+      animation: fadeCloseBtn 0.8s forwards;
+      animation-delay: 3.8s;   /* after text is fully visible */
+      pointer-events: auto;
+    }
+
+    .close-env:hover {
+      background: #ffe2e2;
+    }
+
+    @keyframes fadeCloseBtn {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ensure overlay doesn't block envelope */
+    .overlay.show {
+      z-index: 150;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- main card -->
+  <div class="card">
+    <h1>Will you be my Valentine?</h1>
+    <div class="buttons">
+      <button class="yes-btn">Yes 💖</button>
+    </div>
+  </div>
+
+  <!-- runaway No button -->
+  <button class="no-btn">No</button>
+
+  <!-- thank you overlay (original) -->
+  <div class="overlay">
+    <h2>You just made my heart bloom 🌷💕</h2>
+  </div>
+
+  <!-- envelope popup (hidden initially) with slow open & text reveal -->
+  <div class="envelope-popup" id="envelopePopup">
+    <div class="envelope-wrapper">
+      <div class="envelope-base"></div>
+      <div class="envelope-flap"></div>
+      <div class="envelope-paper">
+        <p>See you at SM Dasma Pala Pala<br> around 2pm</p>
+        <span class="small-heart">🌸❤️🌸</span>
+      </div>
+      <div class="envelope-shine"></div>
+      <button class="close-env" id="closeEnvelope">✕</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const noBtn = document.querySelector('.no-btn');
+      const yesBtn = document.querySelector('.yes-btn');
+      const overlay = document.querySelector('.overlay');
+      const card = document.querySelector('.card');
+      const envelopePopup = document.getElementById('envelopePopup');
+      const closeEnvelopeBtn = document.getElementById('closeEnvelope');
+
+      // Sparkles
+      for (let i = 0; i < 40; i++) {
+        let s = document.createElement('div');
+        s.className = 'sparkle';
+        s.style.left = Math.random() * 100 + 'vw';
+        s.style.animationDuration = (5 + Math.random() * 5) + 's';
+        s.style.animationDelay = Math.random() * 5 + 's';
+        document.body.appendChild(s);
+      }
+
+      // Move No button (avoid card)
+      noBtn.addEventListener('mouseover', () => {
+        const padding = 20;
+        const btnWidth = noBtn.offsetWidth;
+        const btnHeight = noBtn.offsetHeight;
+        const maxX = window.innerWidth - btnWidth - padding;
+        const maxY = window.innerHeight - btnHeight - padding;
+        const cardRect = card.getBoundingClientRect();
+
+        let x, y;
+        let attempts = 0;
+        do {
+          x = Math.random() * maxX;
+          y = Math.random() * maxY;
+          attempts++;
+        } while (
+          x < cardRect.right &&
+          x + btnWidth > cardRect.left &&
+          y < cardRect.bottom &&
+          y + btnHeight > cardRect.top &&
+          attempts < 100
+        );
+
+        noBtn.style.left = x + 'px';
+        noBtn.style.top = y + 'px';
+      });
+
+      // Tulips creation
+      function createTulip() {
+        const tulip = document.createElement('div');
+        tulip.className = 'tulip';
+        tulip.style.left = Math.random() * 100 + 'vw';
+        tulip.style.animationDuration = (6 + Math.random() * 4) + 's';
+        tulip.style.setProperty('--scale', 0.6 + Math.random() * 1);
+
+        tulip.innerHTML = `
+          <div class="flower">
+            <div class="petal left"></div>
+            <div class="petal center"></div>
+            <div class="petal right"></div>
+          </div>
+          <div class="leaf left"></div>
+          <div class="leaf right"></div>
+          <div class="stem"></div>
+        `;
+
+        document.body.appendChild(tulip);
+        setTimeout(() => tulip.remove(), 9000);
+      }
+
+      // Yes button action: overlay + tulips + SLOW envelope popup
+      yesBtn.addEventListener('click', () => {
+        // Show the thank you overlay
+        overlay.classList.add('show');
+
+        // generate tulips (40 of them)
+        for (let i = 0; i < 40; i++) {
+          setTimeout(createTulip, i * 120);
+        }
+
+        // Show the envelope pop-up — all animations (slow open, slow text) play automatically via CSS
+        envelopePopup.classList.add('show');
+      });
+
+      // Close envelope popup when clicking the ✕ button
+      closeEnvelopeBtn.addEventListener('click', () => {
+        envelopePopup.classList.remove('show');
+      });
+
+      // Prevent accidental close when clicking inside envelope-wrapper
+      document.querySelector('.envelope-wrapper').addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      // initial position for "No" button
+      noBtn.style.position = 'fixed';
+      noBtn.style.left = '70%';
+      noBtn.style.top = '70%';
+    })();
+  </script>
+</body>
+</html>
